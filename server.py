@@ -33,10 +33,12 @@ canvas_element = CanvasGrid(draw, 20, 20, 500, 500)
 model_params = {
     "height": 20,
     "width": 20,
-    "population_density" : 0.5,
+    "population_density" : UserSettableParameter("slider", "Population Density", 0.5, 0.1, 0.8, 0.1),
     "death_rate" : 0.02,
-    "transfer_rate" : 0.3,
-    "initial_infection_rate" : 0.02
+    #"transfer_rate" : 0.3,
+    "transfer_rate" : UserSettableParameter("slider", "Virus Transfer Rate", 0.3, 0.1, 0.6, 0.1),
+    #"initial_infection_rate" : 0.02,
+    "initial_infection_rate" : UserSettableParameter("slider", "Initial Infection Rate", 0.02, 0.01, 0.08, 0.01)
 }
 
 server = ModularServer(MainModel,
