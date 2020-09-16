@@ -94,7 +94,7 @@ class MainAgent(Agent) :
 		# If the nearby cell is not empty and transfer probability is below the predefined value, infect the neighbour
 
 		for possible_spread in possible_spread_list :
-			if (self.model.grid.is_cell_empty(possible_spread) == False) and (self.random.random() < self.model.transfer_rate) :
+			if (self.model.grid.is_cell_empty(possible_spread) == False) and (self.random.random() < self.model.transfer_rate) and (self.state == InfectionState.INFECTED) :
 				agent = self.model.grid.get_cell_list_contents(possible_spread)[0]
 				if (agent.state == InfectionState.CLEAN) :
 					agent.state = InfectionState.INFECTED				
