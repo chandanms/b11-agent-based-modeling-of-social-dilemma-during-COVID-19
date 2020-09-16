@@ -41,12 +41,14 @@ class MainModel(Model) :
 				self.grid.position_agent(agent, (x,y))
 				self.schedule.add(agent)
 				i = i + 1
-				
+
 		print ("Total population is : ", i)
 				
 
 	def step(self) :
 		self.schedule.step()
+
+# Infection states. I havent added the state SUSCEPTIBLE since everyone is susceptible to covid19 (Age, asymptomatic parameters will be added in later versions)
 
 class InfectionState(enum.IntEnum) :
 	CLEAN = 0
@@ -57,17 +59,20 @@ class MainAgent(Agent) :
 		super().__init__(unique_id, model)
 		self.state = InfectionState.CLEAN
 
-	def move(self) :
-		possible_steps_list = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
-		j = 0
-		for possible_step in possible_steps_list :
-			if (self.model.grid.is_cell_empty(possible_step) == False) and (self.random.random() < self.model.transfer_rate) :
-				agent = self.model.grid.get_cell_list_contents(possible_step)[0]
-				if (agent.state == InfectionState.CLEAN) :
-					agent.state = InfectionState.INFECTED
+	# def move(self) :
+	# 	possible_steps_list = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
+	# 	for possible_step in possible_steps_list :
+	# 		if (self.model.grid.is_cell_empty(possible_step) == False) and (self.random.random() < self.model.transfer_rate) :
+	# 			agent = self.model.grid.get_cell_list_contents(possible_step)[0]
+	# 			if (agent.state == InfectionState.CLEAN) :
+	# 				agent.state = InfectionState.INFECTED
+
+	# Spreading the virus based on contact with nearby cells
 
 	def spread(self) :
 		possible_spread_list = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
+
+		# If the nearby cell is not empty and transfer probability is below the predefined value, infect the neighbour
 
 		for possible_spread in possible_spread_list :
 			if (self.model.grid.is_cell_empty(possible_spread) == False) and (self.random.random() < self.model.transfer_rate) :
