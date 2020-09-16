@@ -43,10 +43,27 @@ class MainModel(Model) :
 				i = i + 1
 
 		print ("Total population is : ", i)
+
+		self.running = True
+		self.datacollector = DataCollector(agent_reporters={"State": "state"})
+
+	def get_infection_number(self) :
+		infected_number = 0
+		for cell in self.grid.coord_iter() :
+			if (cell[0] != None) :
+				agent = cell[0]
+				if agent.state == InfectionState.INFECTED :
+					infected_number = infected_number + 1
+		return infected_number
+
 				
 
 	def step(self) :
+
+		self.datacollector.collect(self)
 		self.schedule.step()
+		self.get_infection_number()
+
 
 # Infection states. I havent added the state SUSCEPTIBLE since everyone is susceptible to covid19 (Age, asymptomatic parameters will be added in later versions)
 
@@ -67,6 +84,8 @@ class MainAgent(Agent) :
 	# 			if (agent.state == InfectionState.CLEAN) :
 	# 				agent.state = InfectionState.INFECTED
 
+
+
 	# Spreading the virus based on contact with nearby cells
 
 	def spread(self) :
@@ -85,25 +104,9 @@ class MainAgent(Agent) :
 	def step(self) :
 		self.spread()
 
-population_density = 0.5
+# model = MainModel(population_density, death_rate, transfer_rate, initial_infection_rate, width, height)
 
-death_rate = 0.02
-transfer_rate = 0.3
-initial_infection_rate = 0.02
+# steps = 10
 
-width = 20
-height = 20
-
-model = MainModel(population_density, death_rate, transfer_rate, initial_infection_rate, width, height)
-
-steps = 10
-
-for i in range(steps) :
-	model.step()
-	infected_number = 0
-	for cell in model.grid.coord_iter() :
-		if (cell[0] != None) :
-			agent = cell[0]
-			if agent.state == InfectionState.INFECTED :
-				infected_number = infected_number + 1
-	print ("Infection numbers at step ", i, " is ", infected_number)
+# for i in range(steps) :
+# 	model.step()
