@@ -42,7 +42,7 @@ class MainModel(Model) :
 				self.schedule.add(agent)
 				i = i + 1
 
-		print ("Total population is : ", i)
+		self.total_population = i
 
 		self.running = True
 		self.datacollector = DataCollector(agent_reporters={"State": "state"})
@@ -62,7 +62,11 @@ class MainModel(Model) :
 
 		self.datacollector.collect(self)
 		self.schedule.step()
-		self.get_infection_number()
+
+		# Stop the simulation if entire population gets infected
+		
+		if self.get_infection_number() == self.total_population :
+			self.running = False
 
 
 # Infection states. I havent added the state SUSCEPTIBLE since everyone is susceptible to covid19 (Age, asymptomatic parameters will be added in later versions)
@@ -70,6 +74,11 @@ class MainModel(Model) :
 class InfectionState(enum.IntEnum) :
 	CLEAN = 0
 	INFECTED = 1
+
+class QuarentineState(enum.IntEnum) :
+	FREE = 0
+	QUARENTINE = 1
+	
 
 class MainAgent(Agent) :
 	def __init__(self, unique_id, model, pos) :
@@ -97,12 +106,16 @@ class MainAgent(Agent) :
 			if (self.model.grid.is_cell_empty(possible_spread) == False) and (self.random.random() < self.model.transfer_rate) and (self.state == InfectionState.INFECTED) :
 				agent = self.model.grid.get_cell_list_contents(possible_spread)[0]
 				if (agent.state == InfectionState.CLEAN) :
-					agent.state = InfectionState.INFECTED				
+					agent.state = InfectionState.INFECTED
 
+
+	def move(self) :
+		self.model.grid.move_to_empty(self)
 		
 
 	def step(self) :
 		self.spread()
+		self.move()
 
 # model = MainModel(population_density, death_rate, transfer_rate, initial_infection_rate, width, height)
 
