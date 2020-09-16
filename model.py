@@ -38,7 +38,7 @@ class MainModel(Model) :
 
 				if (np.random.choice([0, 1], p = [1 - self.initial_infection_rate, self.initial_infection_rate])) == 1 :
 					agent.state = InfectionState.INFECTED
-					agent.infected_time=self.schedule.time
+					agent.infected_time=self.schedule.time   # time of infection is added for every agent
 
 				self.grid.position_agent(agent, (x,y))
 				self.schedule.add(agent)
@@ -109,14 +109,16 @@ class MainAgent(Agent) :
 				agent = self.model.grid.get_cell_list_contents(possible_spread)[0]
 				if (agent.state == InfectionState.CLEAN) :
 					agent.state = InfectionState.INFECTED
-					agent.infected_time=self.model.schedule.time
+					agent.infected_time=self.model.schedule.time  
 
 
 	def move(self) :
+		# agent moves only if not in quarentine
 		if self.state != QuarentineState.QUARENTINE:
 			self.model.grid.move_to_empty(self)
 
 
+	# update agents from infected/quarentine -> dead, infected/quarentine -> free/recover, infceted -> quarentine
 	def update_status(self):
 		if self.state in [InfectionState.INFECTED,QuarentineState.QUARENTINE] and self.model.recovery_days < self.model.schedule.time-self.infected_time:
 			if np.random.choice([0,1], p=[1-self.model.death_rate,self.model.death_rate]) == 1:
