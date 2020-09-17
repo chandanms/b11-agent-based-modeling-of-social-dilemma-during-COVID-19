@@ -10,7 +10,7 @@ import enum
 ## Declare the Main Model of parameters
 
 class MainModel(Model) :
-	def __init__(self, population_density, death_rate, transfer_rate, initial_infection_rate, width, height,recovery_days=21) :
+	def __init__(self, population_density, death_rate, transfer_rate, initial_infection_rate, width, height, recovery_days=21) :
 
 		self.population_density = population_density
 		self.death_rate = death_rate
@@ -20,6 +20,7 @@ class MainModel(Model) :
 		self.initial_infection_rate = initial_infection_rate
 		self.recovery_days=recovery_days
 		self.incubation_time=4
+		self.dead_agents_number = 0
 
 		self.grid = SingleGrid(width, height, True)
 		self.schedule = RandomActivation(self)
@@ -57,6 +58,18 @@ class MainModel(Model) :
 				if agent.state == InfectionState.INFECTED :
 					infected_number = infected_number + 1
 		return infected_number
+
+	def get_recovered_number(self) :
+		recovered_number = 0
+		for cell in self.grid.coord_iter() :
+			if (cell[0] != None) :
+				agent = cell[0]
+				if agent.state == QuarentineState.FREE :
+					recovered_number = recovered_number + 1
+		return recovered_number
+
+	def get_dead_number(self) :
+		return self.dead_agents_number
 				
 
 	def step(self) :
@@ -124,6 +137,7 @@ class MainAgent(Agent) :
 			if np.random.choice([0,1], p=[1-self.model.death_rate,self.model.death_rate]) == 1:
 				self.model.grid.remove_agent(self)
 				self.model.schedule.remove(self)
+				self.model.dead_agents_number = self.model.dead_agents_number + 1
 			self.state = QuarentineState.FREE
 		elif self.state == InfectionState.INFECTED and self.model.incubation_time < self.model.schedule.time-self.infected_time:
 			self.state = QuarentineState.QUARENTINE

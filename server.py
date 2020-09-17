@@ -12,6 +12,22 @@ class InfectedTextElement(TextElement) :
 		infected_number = model.get_infection_number()
 		return "Infected Agents : " + str(infected_number)
 
+class RecoveredTextElement(TextElement) :
+	def __init__(self) :
+		pass
+
+	def render(self, model) :
+		recovered_number = model.get_recovered_number()
+		return "Recovered Agents : " + str(recovered_number)
+
+class DeadTextElement(TextElement) :
+	def __init__(self) :
+		pass
+
+	def render(self, model) :
+		dead_number = model.get_dead_number()
+		return "Dead Agents : " + str(dead_number)
+
 def draw(agent) :
 	if agent is None :
 		return
@@ -32,6 +48,8 @@ def draw(agent) :
 
 
 infected_number_text_element = InfectedTextElement()
+recovered_number_text_element = RecoveredTextElement()
+dead_number_text_element = DeadTextElement()
 canvas_element = CanvasGrid(draw, 20, 20, 500, 500)
 
 model_params = {
@@ -46,5 +64,5 @@ model_params = {
 }
 
 server = ModularServer(MainModel,
-                       [canvas_element, infected_number_text_element],
+                       [canvas_element, infected_number_text_element, recovered_number_text_element, dead_number_text_element],
                        "Infection Model", model_params)
