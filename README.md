@@ -4,4 +4,12 @@ This repository is a simulation of social dilemma in covid19 situation. The proj
 
 ## Requirements
 
+* mesa 0.8.7
+* numpy 1.19.1
+
+## Launch
+
+Run '''mesa runserver'''
+
+
 
