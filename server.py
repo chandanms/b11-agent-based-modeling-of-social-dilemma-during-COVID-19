@@ -4,6 +4,8 @@ from mesa.visualization.UserParam import UserSettableParameter
 
 from model import MainModel, InfectionState , QuarentineState
 
+# Text elements to Display
+
 class InfectedTextElement(TextElement) :
 	def __init__(self) :
 		pass
@@ -28,6 +30,8 @@ class DeadTextElement(TextElement) :
 		dead_number = model.get_dead_number()
 		return "Dead Agents : " + str(dead_number)
 
+# Color coding of different states, to improve - add colorcoding to mix of two states. ex : Infected and Quarentine
+
 def draw(agent) :
 	if agent is None :
 		return
@@ -51,6 +55,8 @@ infected_number_text_element = InfectedTextElement()
 recovered_number_text_element = RecoveredTextElement()
 dead_number_text_element = DeadTextElement()
 canvas_element = CanvasGrid(draw, 20, 20, 500, 500)
+
+# Declare model parameters
 
 model_params = {
     "height": 20,

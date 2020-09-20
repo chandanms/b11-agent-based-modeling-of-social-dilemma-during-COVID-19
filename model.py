@@ -50,6 +50,8 @@ class MainModel(Model) :
 		self.running = True
 		self.datacollector = DataCollector(agent_reporters={"State": "state"})
 
+	# Get number of infected agents
+
 	def get_infection_number(self) :
 		infected_number = 0
 		for cell in self.grid.coord_iter() :
@@ -59,6 +61,9 @@ class MainModel(Model) :
 					infected_number = infected_number + 1
 		return infected_number
 
+
+	# Get number of recovered agents
+
 	def get_recovered_number(self) :
 		recovered_number = 0
 		for cell in self.grid.coord_iter() :
@@ -67,6 +72,8 @@ class MainModel(Model) :
 				if agent.state == QuarentineState.FREE :
 					recovered_number = recovered_number + 1
 		return recovered_number
+
+	# Get total dead agents
 
 	def get_dead_number(self) :
 		return self.dead_agents_number
@@ -100,14 +107,6 @@ class MainAgent(Agent) :
 		self.state = InfectionState.CLEAN
 		self.infected_time=0
 
-	# def move(self) :
-	# 	possible_steps_list = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
-	# 	for possible_step in possible_steps_list :
-	# 		if (self.model.grid.is_cell_empty(possible_step) == False) and (self.random.random() < self.model.transfer_rate) :
-	# 			agent = self.model.grid.get_cell_list_contents(possible_step)[0]
-	# 			if (agent.state == InfectionState.CLEAN) :
-	# 				agent.state = InfectionState.INFECTED
-
 
 
 	# Spreading the virus based on contact with nearby cells
@@ -131,7 +130,7 @@ class MainAgent(Agent) :
 			self.model.grid.move_to_empty(self)
 
 
-	# update agents from infected/quarentine -> dead, infected/quarentine -> free/recover, infceted -> quarentine
+	# update agents from infected/quarentine -> dead, infected/quarentine -> recover, infected -> quarentine
 	def update_status(self):
 		if self.state in [InfectionState.INFECTED,QuarentineState.QUARENTINE] and self.model.recovery_days < self.model.schedule.time-self.infected_time:
 			if np.random.choice([0,1], p=[1-self.model.death_rate,self.model.death_rate]) == 1:
