@@ -9,7 +9,7 @@ This repository is a simulation of social dilemma in covid19 situation. The proj
 
 ## Launch
 
-Run '''mesa runserver'''
+Run ```mesa runserver```
 
 
 
