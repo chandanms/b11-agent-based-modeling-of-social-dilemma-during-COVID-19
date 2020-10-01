@@ -162,8 +162,9 @@ class MainAgent(Agent) :
 		#updating aspiration and payoff for the agent
 		action_performed=self.action_done[-1]
 		if self.state == InfectionState.INFECTED:
-			self.action_payoff[action_performed]=0
-		payoff=self.action_payoff[action_performed]
+			payoff=0
+		else:
+			payoff=self.action_payoff[action_performed]
 		stimulus=payoff-self.aspiration
 
 		#set new aspiration level
@@ -221,7 +222,8 @@ class MainAgent(Agent) :
 	#track agent 0
 	def display_progress(self):
 		if self.unique_id==0:
-			print("({0},{1},{2})".format(self.unique_id,self.action_done,self.stimulus))
+			#print("({0},{1},{2})".format(self.unique_id,self.action_done,self.stimulus))
+			print(self.action_done[-1],self.action_payoff[self.action_done[-1]])
 		
 	def step(self) :
 		#self.spread()
