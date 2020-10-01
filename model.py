@@ -10,7 +10,7 @@ import enum
 ## Declare the Main Model of parameters
 
 class MainModel(Model) :
-	def __init__(self, population_density, death_rate, transfer_rate, initial_infection_rate, width, height, recovery_days=21) :
+	def __init__(self, population_density, death_rate, transfer_rate, initial_infection_rate, width, height, recovery_days=21,habituation=0.4,learning_rate=0.003,global_aspiration=0.4) :
 
 		self.population_density = population_density
 		self.death_rate = death_rate
@@ -21,6 +21,30 @@ class MainModel(Model) :
 		self.recovery_days=recovery_days
 		self.incubation_time=4
 		self.dead_agents_number = 0
+
+		#parameter setting for the social dilemma problem
+		self.habituation = habituation
+		self.learning_rate = learning_rate
+		self.global_aspiration = global_aspiration
+		self.action_count = 4
+		self.action_payoff = {
+		"Stay In": 0.4,
+		"Party": 0.7,
+		"Buy grocery": 0.6,
+		"Help elderly": 0.6
+		}
+		self.action_prob = {
+		"Stay In": 0.25,
+		"Party": 0.25,
+		"Buy grocery": 0.25,
+		"Help elderly": 0.25
+		}
+		self.action_infection_prob= {
+		"Stay In": 0.2,
+		"Party" : 0.7,
+		"Buy grocery" : 0.5,
+		"Help elderly" : 0.5
+		}
 
 		self.grid = SingleGrid(width, height, True)
 		self.schedule = RandomActivation(self)
@@ -86,8 +110,8 @@ class MainModel(Model) :
 
 		# Stop the simulation if entire population gets infected
 		
-		if self.get_infection_number() == self.total_population :
-			self.running = False
+		# if self.get_infection_number() == self.total_population :
+		# 	self.running = False
 
 
 # Infection states. I havent added the state SUSCEPTIBLE since everyone is susceptible to covid19 (Age, asymptomatic parameters will be added in later versions)
@@ -107,26 +131,79 @@ class MainAgent(Agent) :
 		self.state = InfectionState.CLEAN
 		self.infected_time=0
 
+		#parameters for social dilemma problem
+		self.aspiration=self.model.global_aspiration
+		self.action_payoff=self.model.action_payoff
+		self.action_prob=self.model.action_prob
+		self.stimulus=list()
+		self.action_done=list()
 
+	def action_picker(self):
+		#agent picks an action to perform
+		#print(list(self.action_prob.values()))
+		action=np.random.choice(list(self.action_prob.keys()),p = list(self.action_prob.values()))
+		self.action_done.append(action)
+		
+
+	def action_outcome_spread(self):
+		#spread virus based on the action performed by agent and state of neighbours
+
+		possible_spread_list = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
+
+		for neighbour in possible_spread_list:
+			if (self.model.grid.is_cell_empty(neighbour) == False) and (self.model.grid.get_cell_list_contents(neighbour)[0].state == InfectionState.INFECTED):
+				action_performed=self.action_done[-1]
+				if self.random.random()>=self.model.action_infection_prob[action_performed] and (self.state == InfectionState.CLEAN):
+					self.state = InfectionState.INFECTED
+					self.infected_time=self.model.schedule.time
+
+
+	def social_dilemma_influence(self): 
+		#updating aspiration and payoff for the agent
+		action_performed=self.action_done[-1]
+		if self.state == InfectionState.INFECTED:
+			self.action_payoff[action_performed]=0
+		payoff=self.action_payoff[action_performed]
+		stimulus=payoff-self.aspiration
+
+		#set new aspiration level
+		self.aspiration=self.aspiration*(1-self.model.habituation)+self.model.habituation*payoff
+		action_probability_t0=self.action_prob[action_performed]
+		action_probability_t1=0
+
+		#update probability of doing an action
+		if stimulus>0 :
+			action_probability_t1 = action_probability_t0+(1-action_probability_t0)*self.model.learning_rate*stimulus
+		elif stimulus<=0 :
+			action_probability_t1 = action_probability_t0+action_probability_t0*self.model.learning_rate*stimulus
+		
+		#adjust probability of actions since sum of all should be 1
+		self.action_prob[action_performed]=action_probability_t1
+		#print(self.action_prob[action_performed])
+		probability_adjust = -(action_probability_t1 - action_probability_t0)/(self.model.action_count - 1)
+		for key in list(self.action_prob.keys()):
+			if key != action_performed:
+				self.action_prob[key]=self.action_prob[key] + probability_adjust
+		self.stimulus.append(stimulus)
 
 	# Spreading the virus based on contact with nearby cells
 
-	def spread(self) :
-		possible_spread_list = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
+	# def spread(self) :
+	# 	possible_spread_list = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
 
-		# If the nearby cell is not empty and transfer probability is below the predefined value, infect the neighbour
+	# 	# If the nearby cell is not empty and transfer probability is below the predefined value, infect the neighbour
 
-		for possible_spread in possible_spread_list :
-			if (self.model.grid.is_cell_empty(possible_spread) == False) and (self.random.random() < self.model.transfer_rate) and (self.state == InfectionState.INFECTED) :
-				agent = self.model.grid.get_cell_list_contents(possible_spread)[0]
-				if (agent.state == InfectionState.CLEAN) :
-					agent.state = InfectionState.INFECTED
-					agent.infected_time=self.model.schedule.time  
+	# 	for possible_spread in possible_spread_list :
+	# 		if (self.model.grid.is_cell_empty(possible_spread) == False) and (self.random.random() < self.model.transfer_rate) and (self.state == InfectionState.INFECTED) :
+	# 			agent = self.model.grid.get_cell_list_contents(possible_spread)[0]
+	# 			if (agent.state == InfectionState.CLEAN) :
+	# 				agent.state = InfectionState.INFECTED
+	# 				agent.infected_time=self.model.schedule.time  
 
 
 	def move(self) :
 		# agent moves only if not in quarentine
-		if self.state != QuarentineState.QUARENTINE:
+		if self.state != QuarentineState.QUARENTINE or self.action_done[-1] != "Stay In":
 			self.model.grid.move_to_empty(self)
 
 
@@ -141,11 +218,19 @@ class MainAgent(Agent) :
 		elif self.state == InfectionState.INFECTED and self.model.incubation_time < self.model.schedule.time-self.infected_time:
 			self.state = QuarentineState.QUARENTINE
 
+	#track agent 0
+	def display_progress(self):
+		if self.unique_id==0:
+			print("({0},{1},{2})".format(self.unique_id,self.action_done,self.stimulus))
 		
 	def step(self) :
-		self.spread()
+		#self.spread()
+		self.action_picker()
 		self.move()
+		self.action_outcome_spread()
+		self.social_dilemma_influence()
 		self.update_status()
+		self.display_progress()
 
 # model = MainModel(population_density, death_rate, transfer_rate, initial_infection_rate, width, height)
 
