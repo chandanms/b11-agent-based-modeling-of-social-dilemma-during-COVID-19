@@ -166,6 +166,8 @@ class MainAgent(Agent) :
 		else:
 			payoff=self.action_payoff[action_performed]
 		stimulus=payoff-self.aspiration
+		
+		self.display_progress(action_performed,payoff)
 
 		#set new aspiration level
 		self.aspiration=self.aspiration*(1-self.model.habituation)+self.model.habituation*payoff
@@ -181,10 +183,10 @@ class MainAgent(Agent) :
 		#adjust probability of actions since sum of all should be 1
 		self.action_prob[action_performed]=action_probability_t1
 		#print(self.action_prob[action_performed])
-		probability_adjust = -(action_probability_t1 - action_probability_t0)/(self.model.action_count - 1)
+		probability_adjust = (action_probability_t1 - action_probability_t0)/(self.model.action_count - 1)
 		for key in list(self.action_prob.keys()):
 			if key != action_performed:
-				self.action_prob[key]=self.action_prob[key] + probability_adjust
+				self.action_prob[key]=self.action_prob[key] - probability_adjust
 		self.stimulus.append(stimulus)
 
 	# Spreading the virus based on contact with nearby cells
@@ -220,19 +222,18 @@ class MainAgent(Agent) :
 			self.state = QuarentineState.QUARENTINE
 
 	#track agent 0
-	def display_progress(self):
+	def display_progress(self,*args):
 		if self.unique_id==0:
 			#print("({0},{1},{2})".format(self.unique_id,self.action_done,self.stimulus))
-			print(self.action_done[-1],self.action_payoff[self.action_done[-1]])
-		
+			[print(self.unique_id,arg) for arg in args]
+					
 	def step(self) :
-		#self.spread()
-		self.action_picker()
-		self.move()
-		self.action_outcome_spread()
-		self.social_dilemma_influence()
+		if self.state != QuarentineState.QUARENTINE:   #no action perfromed by agent once in Quarentine 
+			self.action_picker()
+			self.move()
+			self.action_outcome_spread()
+			self.social_dilemma_influence()
 		self.update_status()
-		self.display_progress()
 
 # model = MainModel(population_density, death_rate, transfer_rate, initial_infection_rate, width, height)
 
