@@ -110,8 +110,8 @@ class MainModel(Model) :
 
 		# Stop the simulation if entire population gets infected
 		
-		# if self.get_infection_number() == self.total_population :
-		# 	self.running = False
+		if (self.get_recovered_number() + self.get_dead_number()) == self.total_population :
+		 	self.running = False
 
 
 # Infection states. I havent added the state SUSCEPTIBLE since everyone is susceptible to covid19 (Age, asymptomatic parameters will be added in later versions)
@@ -161,7 +161,8 @@ class MainAgent(Agent) :
 	def social_dilemma_influence(self): 
 		#updating aspiration and payoff for the agent
 		action_performed=self.action_done[-1]
-		if self.state == InfectionState.INFECTED:
+		#assign payoff if the current action infected the agent. All actions during incuabtion time (self.model.schedule.time-self.infected_time>0) recieve normal payoff.
+		if self.state == InfectionState.INFECTED and self.model.schedule.time-self.infected_time == 0:
 			payoff=0
 		else:
 			payoff=self.action_payoff[action_performed]
@@ -182,7 +183,6 @@ class MainAgent(Agent) :
 		
 		#adjust probability of actions since sum of all should be 1
 		self.action_prob[action_performed]=action_probability_t1
-		#print(self.action_prob[action_performed])
 		probability_adjust = (action_probability_t1 - action_probability_t0)/(self.model.action_count - 1)
 		for key in list(self.action_prob.keys()):
 			if key != action_performed:
@@ -218,7 +218,7 @@ class MainAgent(Agent) :
 				self.model.schedule.remove(self)
 				self.model.dead_agents_number = self.model.dead_agents_number + 1
 			self.state = QuarentineState.FREE
-		elif self.state == InfectionState.INFECTED and self.model.incubation_time < self.model.schedule.time-self.infected_time:
+		elif self.state == InfectionState.INFECTED and self.model.incubation_time <= self.model.schedule.time-self.infected_time:
 			self.state = QuarentineState.QUARENTINE
 
 	#track agent 0
