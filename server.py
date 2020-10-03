@@ -2,7 +2,7 @@ from mesa.visualization.ModularVisualization import ModularServer
 from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement
 from mesa.visualization.UserParam import UserSettableParameter
 
-from model import MainModel, InfectionState , QuarentineState
+from model import MainModel, InfectionState, QuarantineState
 
 # Text elements to Display
 
@@ -30,7 +30,7 @@ class DeadTextElement(TextElement) :
 		dead_number = model.get_dead_number()
 		return "Dead Agents : " + str(dead_number)
 
-# Color coding of different states, to improve - add colorcoding to mix of two states. ex : Infected and Quarentine
+# Color coding of different states, to improve - add colorcoding to mix of two states. ex : Infected and Quarantine
 
 def draw(agent) :
 	if agent is None :
@@ -38,13 +38,13 @@ def draw(agent) :
 
 	portrayal = {"Shape" : "circle", "r" : 0.5, "Filled" : "true", "Layer" : 0}
 
-	if agent.state == InfectionState.CLEAN :		
+	if agent.infectionstate == InfectionState.CLEAN :		
 		portrayal["Color"] = ["#0000FF", "#9999FF"]
-	elif agent.state == QuarentineState.FREE :
+	elif agent.infectionstate == InfectionState.RECOVERED :
 		portrayal["Color"] = ["#32CD32", "#7FFF00"]   #green
-	elif agent.state == QuarentineState.QUARENTINE :
+	elif agent.quarantinestate == QuarantineState.QUARANTINE :
 		portrayal["Color"] = ["#FF9000", "#FF7B00"]   #orange
-	else :
+	elif agent.infectionstate == InfectionState.INFECTED :
 		portrayal["Color"] = ["#FF0000", "#FF9999"]
 		
 
