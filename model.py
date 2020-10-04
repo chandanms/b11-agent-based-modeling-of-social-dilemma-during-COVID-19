@@ -10,7 +10,9 @@ import enum
 ## Declare the Main Model of parameters
 
 class MainModel(Model) :
-	def __init__(self, population_density, death_rate, transfer_rate, initial_infection_rate, width, height, recovery_days = 11, habituation=0.1, learning_rate=0.3, global_aspiration=0.4) :
+	def __init__(self, population_density, death_rate, transfer_rate, 
+				initial_infection_rate, width, height, recovery_days = 11, 
+				habituation=0.1, learning_rate=0.3, global_aspiration=0.4) :
 
 		self.population_density = population_density
 		self.death_rate = death_rate
@@ -22,7 +24,8 @@ class MainModel(Model) :
 		self.dead_agents_number = 0
 		# parameter for the government actions
 
-		self.governement_action_threshold = 0.3  #After this threshold, government imposes lockdown and self quarantine rules.
+		#After this threshold, government imposes lockdown and self quarantine rules
+		self.governement_action_threshold = 0.3  
 		self.lockdown = False
 		self.quarantine_prob = 0.3
 
@@ -43,12 +46,10 @@ class MainModel(Model) :
 		i = 0
 
 		# Get all the cells in SingleGrid
-
 		for cell in self.grid.coord_iter() :
 			x, y = cell[1], cell[2]
 
 			# Add agents and infect them with initial infection rate
-			
 			if self.random.random() < self.population_density :
 				agent = MainAgent(i, self, (x, y))
 
@@ -64,45 +65,44 @@ class MainModel(Model) :
 		self.total_population = i
 
 		self.running = True
-		self.datacollector = DataCollector(agent_reporters={"QuarantineState": "quarantinestate", "InfectionState" : "infectionstate"})
-
-	#Get number of susceptible agents
+		self.datacollector = DataCollector(agent_reporters={"QuarantineState": "quarantinestate", 
+															"InfectionState" : "infectionstate"})
 
 	def get_susceptible_number(self):
+		#Get number of susceptible agents
+
 		susceptible_number = 0
 		for cell in self.grid.coord_iter() :
 			if (cell[0] != None) :
 				agent = cell[0]
-				if agent.infectionstate == InfectionState.CLEAN :
+				if (agent.infectionstate == InfectionState.CLEAN):
 					susceptible_number = susceptible_number + 1
 		return susceptible_number
-
-	# Get number of infected agents
-
+	
 	def get_infection_number(self) :
+		# Get number of infected agents
+
 		infected_number = 0
 		for cell in self.grid.coord_iter() :
-			if (cell[0] != None) :
+			if (cell[0] != None):
 				agent = cell[0]
-				if agent.infectionstate == InfectionState.INFECTED :
+				if (agent.infectionstate == InfectionState.INFECTED):
 					infected_number = infected_number + 1
 		return infected_number
 
-
-	# Get number of recovered agents
-
 	def get_recovered_number(self) :
+		# Get number of recovered agents
+
 		recovered_number = 0
 		for cell in self.grid.coord_iter() :
-			if (cell[0] != None) :
+			if (cell[0] != None):
 				agent = cell[0]
-				if agent.infectionstate == InfectionState.RECOVERED :
+				if (agent.infectionstate == InfectionState.RECOVERED):
 					recovered_number = recovered_number + 1
 		return recovered_number
 
-	# Get total dead agents
-
 	def get_dead_number(self) :
+		# Get total dead agents
 		return self.dead_agents_number
 				
 
@@ -111,29 +111,29 @@ class MainModel(Model) :
 		self.datacollector.collect(self)
 		self.schedule.step()
 
-		if (self.get_infection_number()/self.total_population) > 0.4 :
+		if ((self.get_infection_number()/self.total_population) > 0.4):
 			self.lockdown = True
 
-		# Stop the simulation if entire population gets infected
-		
-		if (self.get_recovered_number() + self.get_dead_number() + self.get_susceptible_number()) == self.total_population :
+		# Stop the simulation if the virus is eradicated
+		if ((self.get_recovered_number() + self.get_dead_number() + self.get_susceptible_number()) == self.total_population):
 		 	self.running = False
 
 
-
-'''Infection states. I havent added the state SUSCEPTIBLE since everyone is susceptible to covid19 
+'''Infection states. SUSCEPTIBLE state isn't added since everyone is susceptible to covid19 
 (Age, asymptomatic parameters will be added in later versions)
 '''
-
 class InfectionState(enum.IntEnum) :
 	CLEAN = 0
 	INFECTED = 1
 	RECOVERED = 2
+
 	
 class QuarantineState(enum.IntEnum) :
 	QUARANTINE = 3
 	FREE = 4
 
+
+#Agents are modelled and perform various actions.
 class MainAgent(Agent) :
 	def __init__(self, unique_id, model, pos) :
 		super().__init__(unique_id, model)
@@ -141,7 +141,7 @@ class MainAgent(Agent) :
 		self.quarantinestate = QuarantineState.FREE
 		self.infected_time = 0
 
-		#parameters for social dilemma problem
+		#parameters to implement the social dilemma problem
 		self.aspiration = self.model.global_aspiration
 		self.action_payoff = {
 		"Stay In": 0.4,
@@ -155,48 +155,58 @@ class MainAgent(Agent) :
 		"Buy grocery": 0.25,
 		"Help elderly": 0.25
 		}
-
 		self.stimulus=list()
 		self.action_done=list()
-		#self.display_progress("Initial action probabilities: ",self.action_prob)
-
+		self.display_progress("Initial action probabilities: ",self.action_prob)
 
 	def action_picker(self):
-		#agent picks an action to perform
-
-		action=np.random.choice(list(self.action_prob.keys()),p = list(self.action_prob.values()))
+		#Agent picks an action to perform.
+		if (self.quarantinestate == QuarantineState.QUARANTINE):
+			action= "Stay In"
+		else:
+			action=np.random.choice(list(self.action_prob.keys()),p = list(self.action_prob.values()))
 		self.action_done.append(action)
 
-		# self.display_progress("------------------------------------------------------------------------------------------")
-		# self.display_progress("Actions chosen --> ",self.action_done)
+		self.display_progress("------------------------------------------------------------------------------------------")
 
 
 	def spread(self) :
+		#Spread virus based on the rate of spread and the state of neighbours
+
 		possible_spread_list = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
 		for neighbour in possible_spread_list :
-			if (self.model.grid.is_cell_empty(neighbour) == False) and (self.model.grid.get_cell_list_contents(neighbour)[0].infectionstate == InfectionState.INFECTED) and (self.random.random() < self.model.transfer_rate):
+			if ((self.model.grid.is_cell_empty(neighbour) == False) and 
+				(self.model.grid.get_cell_list_contents(neighbour)[0].infectionstate == InfectionState.INFECTED) and 
+				(self.random.random() < self.model.transfer_rate)):
+				
 				if (self.infectionstate == InfectionState.CLEAN):
 					self.infectionstate = InfectionState.INFECTED
 					self.infected_time = self.model.schedule.time
+					self.display_progress("Agent is infected")
 
 
 
 	def action_outcome_spread_lockdown(self):
-		#spread virus based on the action performed by agent and state of neighbours
+		#Spread virus based on the action performed by agent and state of neighbours
 
 		possible_spread_list = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
 		for neighbour in possible_spread_list:
-			if (self.model.grid.is_cell_empty(neighbour) == False) and (self.model.grid.get_cell_list_contents(neighbour)[0].infectionstate == InfectionState.INFECTED):
+			if ((self.model.grid.is_cell_empty(neighbour) == False) and 
+			   (self.model.grid.get_cell_list_contents(neighbour)[0].infectionstate == InfectionState.INFECTED)):
 				action_performed=self.action_done[-1]
-				if self.random.random()>=self.model.action_infection_prob[action_performed] and (self.infectionstate == InfectionState.CLEAN):
+
+				if (self.random.random()>=self.model.action_infection_prob[action_performed] and 
+					(self.infectionstate == InfectionState.CLEAN)):
 					self.infectionstate = InfectionState.INFECTED
 					self.infected_time=self.model.schedule.time
+					self.display_progress("Agent is INFECTED.")
 
-					if self.random.random() >= self.model.quarantine_prob:
+					#A fraction of agent choose to self quarantine on being infected
+					if (self.random.random() <= self.model.quarantine_prob):
 						self.quarantinestate=QuarantineState.QUARANTINE
-					
+						self.display_progress("Agent self quarantines.")
 
-					#self.display_progress("Agent gets INFECTED. Incubation period of four days begins.")
+					
 
 	def social_dilemma_influence(self): 
 		#updating aspiration and payoff for the agent
@@ -204,46 +214,36 @@ class MainAgent(Agent) :
 		payoff=0
 		action_performed=self.action_done[-1]
 
-		'''assign payoff if the current action infected the agent.
-		All actions during incuabtion time (self.model.schedule.time-self.infected_time>0) recieve normal payoff.
-		'''
-		if self.infectionstate == InfectionState.INFECTED and self.model.schedule.time-self.infected_time == 0:
+		#Agent recieves no payoff on being infected.
+		if (self.infectionstate == InfectionState.INFECTED and self.model.schedule.time-self.infected_time == 0):
 			payoff=0
 		else:
 			payoff=self.action_payoff[action_performed]
 		stimulus = payoff - self.aspiration
 		
-
-		#self.display_progress("Agent's aspiration level is ",self.aspiration)
-		
-		#set new aspiration level
-		if stimulus<0 and self.infectionstate != InfectionState.INFECTED :
+		if (stimulus<0 and self.infectionstate != InfectionState.INFECTED):
+			#if the agent isn't infected but recieves a pay off lower than the aspiration, the agent explores other action
 			self.randomizer()
 		else:
 			self.aspiration=self.aspiration*(1-self.model.habituation)+self.model.habituation*payoff
 			action_probability_t0=self.action_prob[action_performed]
 			action_probability_t1=0
 
-
-		##Changed Stimulus
-		#update probability of doing an action
-			if stimulus>0 :
+			#Update probability of doing an action
+			if (stimulus>0):
 				action_probability_t1 = action_probability_t0+(1-action_probability_t0)*self.model.learning_rate*stimulus
 				self.aspiration=self.aspiration*(1-self.model.habituation)+self.model.habituation*payoff
-			elif stimulus<=0 :
+			elif (stimulus<=0):
 				action_probability_t1 = action_probability_t0+action_probability_t0*self.model.learning_rate*stimulus
 				self.aspiration=self.aspiration*(1-self.model.habituation)-self.model.habituation*payoff
 		
-		#adjust probability of actions since sum of all should be 1	
-
-		
-		#self.display_progress("Probability update for {} ".format(action_performed),self.action_prob[action_performed])
-		
+			#Adjust probability of actions since sum of all should be 1	
 			probability_adjust = (action_probability_t1 - action_probability_t0)/(self.model.action_count - 1)
 
+			#Ensure the probability for actions are never negative
 			probability_error = False
 			for key in list(self.action_prob.keys()):
-				if key != action_performed:
+				if (key != action_performed):
 					if ((self.action_prob[key] - probability_adjust) < 0) :
 						probability_error = True
 						break
@@ -251,60 +251,67 @@ class MainAgent(Agent) :
 			if (probability_error == False) :
 				self.action_prob[action_performed] = action_probability_t1
 				for key in list(self.action_prob.keys()):
-					if key != action_performed:
+					if (key != action_performed):
 						self.action_prob[key] = (self.action_prob[key] - probability_adjust)
-					
-				
-				#self.display_progress("Probability update for {} is {}".format(key,self.action_prob[key]))
 		
 		#self.stimulus.append(stimulus)
-		if self.unique_id == 4 :
-			print (action_performed)
-			print (self.action_prob)
-			print (self.aspiration)
+		self.display_progress("Action performed ->",action_performed)
+		self.display_progress("Action probability ->",self.action_prob)
+		self.display_progress("Agent aspiration ->",self.aspiration)
 
 
 	def move(self) :
+		#Agent moves before lockdown is imposed
 		self.model.grid.move_to_empty(self)
 
 
 	def move_lockdown(self) :
-		# agent moves only if not in quarantine
+		#Agent moves only if not in quarantine
 
-		if self.action_done[-1] != "Stay In":
+		if (self.action_done[-1] != "Stay In"):
 			self.model.grid.move_to_empty(self)
-			#self.display_progress("Agent moves")
+			self.display_progress("Agent moves")
 		else:
-			# self.quarantinestate = QuarantineState.QUARANTINE
 			self.display_progress("Agent doesn't move")
 
 
-	##Changed - People have chances of death in every step after 2/3rd of recovery time
-
 	def update_status(self) :
-		if (self.infectionstate == InfectionState.INFECTED) and ((self.model.schedule.time - self.infected_time) > self.model.recovery_days*0.666) and ((self.model.schedule.time - self.infected_time) < self.model.recovery_days) :
-			if np.random.choice([0, 1], p=[1 - self.model.death_rate, self.model.death_rate]) == 1 :
+		#Agent state is updated from infected -> dead, infected -> recovered
+
+		if ((self.infectionstate == InfectionState.INFECTED) and 
+			((self.model.schedule.time - self.infected_time) > self.model.recovery_days*0.666) and 
+			((self.model.schedule.time - self.infected_time) < self.model.recovery_days)):
+			#Agent may die at any step after 2/3rd of the recover time
+			if (np.random.choice([0, 1], p=[1 - self.model.death_rate, self.model.death_rate]) == 1):
 				self.model.grid.remove_agent(self)
 				self.model.schedule.remove(self)
 				self.model.dead_agents_number = self.model.dead_agents_number + 1
-		elif (self.model.recovery_days < (self.model.schedule.time-self.infected_time)) :     #if agent not infected he cant recover
-			self.infectionstate = InfectionState.RECOVERED
+				self.display_progress("Agent dies")
+
+		elif (self.model.recovery_days < (self.model.schedule.time-self.infected_time) and self.infectionstate == InfectionState.INFECTED): 
+			 self.infectionstate = InfectionState.RECOVERED
+			 self.display_progress("Agent recovers")
+
 		else :
 			pass
 
-	# update agents from infected/quarantine -> dead, infected/quarantine -> recover, infected -> quarantine
+
 	def update_status_lockdown(self):
-		if (self.infectionstate == InfectionState.INFECTED) and ((self.model.schedule.time - self.infected_time) > self.model.recovery_days*0.666) and ((self.model.schedule.time - self.infected_time) < self.model.recovery_days):
-			if np.random.choice([0,1], p=[1-self.model.death_rate, self.model.death_rate]) == 1:
+		# update agents from infected -> quarantine, infected/quarantine -> dead, infected -> recover, quarantine -> free
+
+		if ((self.infectionstate == InfectionState.INFECTED) and 
+			((self.model.schedule.time - self.infected_time) > self.model.recovery_days*0.666) and 
+			((self.model.schedule.time - self.infected_time) < self.model.recovery_days)):
+
+			if (np.random.choice([0,1], p=[1-self.model.death_rate, self.model.death_rate]) == 1):
 				self.model.grid.remove_agent(self)
 				self.model.schedule.remove(self)
 				self.model.dead_agents_number = self.model.dead_agents_number + 1
-				
-				#self.display_progress("The Agent is dead")
-		elif (self.model.recovery_days < (self.model.schedule.time-self.infected_time)) :
+				self.display_progress("The Agent is dead")
+		elif (self.model.recovery_days < (self.model.schedule.time-self.infected_time) and self.infectionstate == InfectionState.INFECTED):
 			self.infectionstate = InfectionState.RECOVERED
 			self.quarantinestate = QuarantineState.FREE
-
+			self.display_progress("Agent is recovered")
 		else :
 			pass
 			
@@ -314,31 +321,28 @@ class MainAgent(Agent) :
 
 
 	def randomizer(self):
-		'''set the probabilities of performing an action to make agent pick a different action''' 
+		#set the probabilities of performing an action to make agent pick a different action
+
 		for key in self.action_prob.keys():
-			if key == self.action_done[-1] :
+			if (key == self.action_done[-1]):
 				self.action_prob[key] = 0.1
 			else :
 				self.action_prob[key] = 0.3
 
 	
 	def display_progress(self,*args):
-		'''track agent 0'''
-
-		if self.unique_id==0:
-			#print("({0},{1},{2})".format(self.unique_id,self.action_done,self.stimulus))
+		#track agent 4
+		if (self.unique_id==4):
 			[print(arg,end=" ") for arg in args]
 			print("\n")
 					
 	
 	def step(self) :
-		if (self.model.lockdown == False) :
+		if (self.model.lockdown == False):
 			self.move()
 			self.spread()
 			self.update_status()
-
 		else :
-
 			self.action_picker()
 			self.move_lockdown()
 			self.action_outcome_spread_lockdown()
