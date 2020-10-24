@@ -9,8 +9,39 @@ clean_color = "#00008b"
 recovered_color = "#008000"
 quarantine_color = "#FFA500"
 infected_color = "#FF0000"
+dead_color = "#000000"
 
 # Text elements to Display
+
+class SpaceTextElement(TextElement) :
+	def __init__(self) :
+		pass
+
+	def render(self, model) :
+		return "\n"
+
+
+class AgentInfectionStatusElement(TextElement) :
+	def __init__(self) :
+		pass
+
+	def render(self, model) :
+		return "Infection State : " + str(model.agent_tracking_infectionstate())
+
+
+class AgentQuarantineStatusElement(TextElement) :
+	def __init__(self) :
+		pass
+
+	def render(self, model) :
+		return "Quarantine State : " + str(model.agent_tracking_quarantinestate())
+
+class AgentActionTaken(TextElement) :
+	def __init__(self) :
+		pass
+
+	def render(self, model) :
+		return "Action Taken : " + str(model.agent_tracking_action())
 
 class InfectedTextElement(TextElement) :
 	def __init__(self) :
@@ -63,27 +94,33 @@ def draw(agent) :
 
 	return portrayal
 
-
+space_text_element = SpaceTextElement()
 infected_number_text_element = InfectedTextElement()
 recovered_number_text_element = RecoveredTextElement()
 dead_number_text_element = DeadTextElement()
 agent_legend_element = AgentsLegend()
 canvas_element = CanvasGrid(draw, 40, 40, 600, 600)
+agent_infection_status_element = AgentInfectionStatusElement()
+agent_quarantine_status_element = AgentQuarantineStatusElement()
+agent_action_status_element = AgentActionTaken()
 
-line_chart = ChartModule(
-	[
-		{"Label" : "Susceptible", "Color": clean_color},
-		{"Label" : "Recovered", "Color" : recovered_color},
-		{"Label" : "Quarantine and Infected", "Color" : quarantine_color},
-		{"Label" : "Out and Infected", "Color" : infected_color},
+
+line_chart_aspiration_comparision = ChartModule(
+	[	
+		{"Label" : "Average Aspiration", "Color" : "#9400D3"},
+		{"Label" : "Average Stay In", "Color" : "#FFA500"},
+		{"Label" : "Average Get Out", "Color" : "#E033ff"}
 	]
+
 )
 
-bar_chart = BarChartModule(
+line_chart_agent = ChartModule(
 	[
-		{"Label" : "Stay In", "Color" : "#3349FF"},
-		{"Label" : "Go Out", "Color" : "#FF3C33"},
+		{"Label" : "Aspiration", "Color" : "#9400D3"},
+		{"Label" : "Stay in probability", "Color" : "#3349FF"},
+		{"Label" : "Go out probability", "Color" : "#FF3C33"},
 	]
+
 )
 
 # Declare model parameters
@@ -102,5 +139,5 @@ model_params = {
 }
 
 server = ModularServer(MainModel,
-                       [canvas_element, line_chart, bar_chart, infected_number_text_element, recovered_number_text_element, dead_number_text_element, agent_legend_element],
+                       [canvas_element, space_text_element, line_chart_aspiration_comparision, space_text_element, line_chart_agent, agent_infection_status_element, agent_quarantine_status_element, agent_action_status_element],
                        "Infection Model", model_params)

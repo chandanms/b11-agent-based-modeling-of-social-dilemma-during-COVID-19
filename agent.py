@@ -31,6 +31,7 @@ class MainAgent(Agent) :
 
 		#parameters to implement the social dilemma problem
 		self.aspiration = self.model.global_aspiration
+		self.habituation = self.model.habituation
 		self.action_payoff = {
 			"Stay In": 0.4,
 			"Party": 0.7,
@@ -39,17 +40,10 @@ class MainAgent(Agent) :
 		}
 
 		self.action_prob = {
-			"Stay In": 0.25,
-			"Party": 0.25,
-			"Buy grocery": 0.25,
-			"Help elderly": 0.25
-		}
-
-		self.habituation = {
-			"Stay In": 0.1,
-			"Party": 0.1,
-			"Buy grocery": 0.1,
-			"Help elderly": 0.1
+			"Stay In": 0.5,
+			"Party": 0.5/3,
+			"Buy grocery": 0.5/3,
+			"Help elderly": 0.5/3
 		}
 
 		self.stimulus=list()
@@ -151,17 +145,17 @@ class MainAgent(Agent) :
 			#if the agent isn't infected but recieves a pay off lower than the aspiration, the agent explores other action
 			self.randomizer()
 		else:
-			self.aspiration=self.aspiration*(1-self.habituation[action_performed])+self.habituation[action_performed]*payoff
+			self.aspiration=self.aspiration*(1-self.habituation)+self.habituation*payoff
 			action_probability_t0=self.action_prob[action_performed]
 			action_probability_t1=0
 
 			#Update probability of doing an action
 			if (stimulus>0):
 				action_probability_t1 = action_probability_t0+(1-action_probability_t0)*self.model.learning_rate*stimulus
-				self.aspiration=self.aspiration*(1-self.habituation[action_performed])+self.habituation[action_performed]*payoff
+				self.aspiration=self.aspiration*(1-self.habituation)+self.habituation*payoff
 			elif (stimulus<=0):
 				action_probability_t1 = action_probability_t0+action_probability_t0*self.model.learning_rate*stimulus
-				self.aspiration=self.aspiration*(1-self.habituation[action_performed])-self.habituation[action_performed]*payoff
+				self.aspiration=self.aspiration*(1-self.habituation)-self.habituation*payoff
 		
 			#Adjust probability of actions since sum of all should be 1	
 			probability_adjust = (action_probability_t1 - action_probability_t0)/(self.model.action_count - 1)
