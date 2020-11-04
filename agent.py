@@ -59,7 +59,7 @@ class MainAgent(Agent):
         to the list of action done.
         """
 
-        if self.model.lockdown:
+        if self.model.lockdown==True:
             action_probability_stayin_t0 = self.action_prob['Stay In']
 
             # Add effect of government stringent to the action probabilities
@@ -124,56 +124,58 @@ class MainAgent(Agent):
         previous action and payoff
         """
 
-        payoff = 0
-        action_performed = self.action_done[-1]
+        if self.model.lockdown == True:
 
-        if (self.infectionstate == InfectionState.INFECTED and self.model.schedule.time -
-                self.infected_time == 0):  # Agent recieves no payoff on being infected.
-            payoff = 0
-        else:
-            payoff = self.action_payoff[action_performed]
-        stimulus = payoff - self.aspiration
+	        payoff = 0
+	        action_performed = self.action_done[-1]
 
-        if (stimulus < 0 and self.infectionstate != InfectionState.INFECTED):
-            """if the agent isn't infected but recieves a pay off lower than the
-            aspiration, the agent explores other action
-            """
-            self.randomizer()
-        else:
-            self.aspiration = self.aspiration * \
-                (1 - self.habituation) + self.habituation * payoff
-            action_probability_t0 = self.action_prob[action_performed]
-            action_probability_t1 = 0
+	        if (self.infectionstate == InfectionState.INFECTED and self.model.schedule.time -
+	                self.infected_time == 0):  # Agent recieves no payoff on being infected.
+	            payoff = 0
+	        else:
+	            payoff = self.action_payoff[action_performed]
+	        stimulus = payoff - self.aspiration
 
-            if (stimulus > 0):  # Update probability of doing an action
-                action_probability_t1 = action_probability_t0 + \
-                    (1 - action_probability_t0) * \
-                    self.model.learning_rate * stimulus
-                self.aspiration = self.aspiration * \
-                    (1 - self.habituation) + self.habituation * payoff
-            elif (stimulus <= 0):
-                action_probability_t1 = action_probability_t0 + \
-                    action_probability_t0 * self.model.learning_rate * stimulus
-                self.aspiration = self.aspiration * \
-                    (1 - self.habituation) - self.habituation * payoff
+	        if (stimulus < 0 and self.infectionstate != InfectionState.INFECTED):
+	            """if the agent isn't infected but recieves a pay off lower than the
+	            aspiration, the agent explores other action
+	            """
+	            self.randomizer()
+	        else:
+	            self.aspiration = self.aspiration * \
+	                (1 - self.habituation) + self.habituation * payoff
+	            action_probability_t0 = self.action_prob[action_performed]
+	            action_probability_t1 = 0
 
-            probability_adjust = (  # Adjust probability of actions since sum of all should be 1
-                action_probability_t1 - action_probability_t0) / (self.model.action_count - 1)
+	            if (stimulus > 0):  # Update probability of doing an action
+	                action_probability_t1 = action_probability_t0 + \
+	                    (1 - action_probability_t0) * \
+	                    self.model.learning_rate * stimulus
+	                self.aspiration = self.aspiration * \
+	                    (1 - self.habituation) + self.habituation * payoff
+	            elif (stimulus <= 0):
+	                action_probability_t1 = action_probability_t0 + \
+	                    action_probability_t0 * self.model.learning_rate * stimulus
+	                self.aspiration = self.aspiration * \
+	                    (1 - self.habituation) - self.habituation * payoff
 
-            probability_error = False
-            for key in list(self.action_prob.keys(
-            )):  # Ensure the probability for actions are never negative
-                if (key != action_performed):
-                    if ((self.action_prob[key] - probability_adjust) < 0):
-                        probability_error = True
-                        break
+	            probability_adjust = (  # Adjust probability of actions since sum of all should be 1
+	                action_probability_t1 - action_probability_t0) / (self.model.action_count - 1)
 
-            if (probability_error is False):
-                self.action_prob[action_performed] = action_probability_t1
-                for key in list(self.action_prob.keys()):
-                    if (key != action_performed):
-                        self.action_prob[key] = (
-                            self.action_prob[key] - probability_adjust)
+	            probability_error = False
+	            for key in list(self.action_prob.keys(
+	            )):  # Ensure the probability for actions are never negative
+	                if (key != action_performed):
+	                    if ((self.action_prob[key] - probability_adjust) < 0):
+	                        probability_error = True
+	                        break
+
+	            if (probability_error is False):
+	                self.action_prob[action_performed] = action_probability_t1
+	                for key in list(self.action_prob.keys()):
+	                    if (key != action_performed):
+	                        self.action_prob[key] = (
+	                            self.action_prob[key] - probability_adjust)
 
     def move(self):
         """If the agent is not staying in, move to an empty cell
@@ -210,7 +212,6 @@ class MainAgent(Agent):
         """Set equal probabilities of performaing an action to make agent pick
         a different action to avaoid SCE
         """
-
         for key in self.action_prob.keys():
             if (key == self.action_done[-1]):
                 self.action_prob[key] = 0.1
