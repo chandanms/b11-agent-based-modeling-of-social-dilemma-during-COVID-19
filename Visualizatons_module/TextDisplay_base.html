@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>My First Web Page</h2>
+<p>My first paragraph.</p>
+
+<p>Never call document.write after the document has finished loading.
+It will overwrite the whole document.</p>
+
+<script>
+var TextDisplay=function(canvas_width, canvas_height){
+document.write(5 + 6);
+}
+</script>
+
+</body>
+</html> 
+
+
+var canvas_tag = '<canvas width="' + canvas_width + '" height="' + canvas_height + '" style="border: 3px solid black;position: relative;"><ul class="legend" style="list-style: none;"><li style="float: left; margin-right: 10px;"><span style="border: 1px solid #ccc; float: left; width: 12px; height: 12px; margin: 2px; background-color: #ff00ff;" class="superawesome"></span> Super Awesome</li><li style="float: left; margin-right: 10px;"><span style="border: 1px solid #ccc; float: left; width: 12px; height: 12px; margin: 2px; background-color: #00ffff; " class="awesome"></span> Awesome</li><li style="float: left; margin-right: 10px;"><span style="border: 1px solid #ccc; float: left; width: 12px; height: 12px; margin: 2px;background-color: #0000ff; " class="kindaawesome"></span> Kinda Awesome</li><li><span style="border: 1px solid #ccc; float: left; width: 12px; height: 12px; margin: 2px;background-color: #000000; " class="notawesome"></span> Not Awesome</li></ul></canvas>';

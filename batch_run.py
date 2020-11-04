@@ -3,7 +3,9 @@ from mesa.space import SingleGrid
 from mesa.datacollection import DataCollector
 from mesa.time import RandomActivation
 import numpy as np
-
+from mesa.batchrunner import BatchRunner
+import numpy as np
+import pandas as pd
 from agent import MainAgent
 
 import enum
@@ -99,7 +101,7 @@ def get_average_aspiration(model):
     aspiration_list = []
     for i, a in enumerate(model.schedule.agents):
         aspiration_list.append(a.aspiration)
-    return (sum(aspiration_list))
+    return (sum(aspiration_list) / i)
 
 
 def get_average_stay_in(model):
@@ -131,17 +133,10 @@ def get_average_go_out(model):
 
 class MainModel(Model):
 
-    """This is the simulation of social dilemma between the agents during the Covid19. The simulation is based on SIR model for spread
-    of virus. The spreading of the virus and action of agents taken is depicted in the graphs. Key things to observe are the change in
-    actions taken by agents for changes in parameters of global aspiration, government strictness (0 denotes no strictness, 0.9 denotes
-    high strictness). User can change the parameters by using the sliders.
-
-    """
-
-    def __init__(self, population_density, death_rate, transfer_rate,
-                 initial_infection_rate, width, height, government_stringent,
-                 government_action_threshold, global_aspiration,
-                 recovery_days=11, habituation=0.1, learning_rate=0.1, ):
+    def __init__(self, government_stringent, global_aspiration, population_density=0.3, death_rate=0.02, transfer_rate=0.3,
+                 initial_infection_rate=0.02, width=40, height=40,
+                 government_action_threshold=0.3, recovery_days=11, habituation=0.1,
+                 learning_rate=0.1):
         """Model class which has all the model paramaters and functions
 
         Parameters:
@@ -164,12 +159,12 @@ class MainModel(Model):
             self.global_aspiration: initial global aspiration of the population
             self.action_infection_prob: Probability of getting infected for a particular action
         """
-        self.population_density = population_density
-        self.death_rate = death_rate
+        self.population_density = 0.3
+        self.death_rate = 0.02
         self.width = width
         self.height = height
-        self.transfer_rate = transfer_rate
-        self.initial_infection_rate = initial_infection_rate
+        self.transfer_rate = 0.3
+        self.initial_infection_rate = 0.02
         self.recovery_days = recovery_days
         self.dead_agents_number = 0
 
@@ -249,23 +244,67 @@ class MainModel(Model):
             },
         )
 
+    def save_csv(self, stay_in_list, stay_out_list,
+                 steps_list, aspiration_list, infection_list):
+        """Saves the CSVs for creating graphs.
+
+        Returns : CSV for comparing aspiration and government strictness with columns
+                steps, number of agents staying in, number of agents going out
+
+                CSV for comparing infection numbers and strictness with columns
+                steps, infection rate
+        """
+        if not os.path.exists('simulation'):
+            os.makedirs('simulation')
+
+        with open("simulation/dilemma_" + "aspiration_" + str(self.global_aspiration) + "_" + "stringent" + "_" + str(self.government_stringent) + ".csv", "w", newline='') as file:
+            writer = csv.writer(file)
+            rows = zip(steps_list, stay_in_list, stay_out_list)
+
+            for row in rows:
+                writer.writerow(row)
+
+        with open("simulation/infection_number_" + "stringent_" + str(self.government_stringent) + ".csv", "w", newline='') as file:
+            writer = csv.writer(file)
+            rows = zip(steps_list, infection_list)
+
+            for row in rows:
+                writer.writerow(row)
+
     def step(self):
+        """Runs the step function of simulation and stores the parameter values to save for CSV
+        """
 
         self.step_counter = self.step_counter + 1
 
         self.datacollector.collect(self)
         self.schedule.step()
 
-        """Impose lockdown if infection number goes above the given threshold"""
+        stay_in_each_step = self.get_stay_in_number()
+        stay_out_each_step = self.get_stay_out_number()
+        avg_aspiration_each_step = self.get_avg_aspiration()
+        infection_number_each_step = self.get_infection_number() / self.total_population
 
         if ((self.get_infection_number() / self.total_population)
                 > self.government_action_threshold):
+
             self.lockdown = True
 
-        """If the virus is iradicated, stop the simulation"""
+            self.stay_in_list.append(stay_in_each_step)
+            self.stay_out_list.append(stay_out_each_step)
+            self.steps_list.append(self.step_counter)
+            self.aspiration_list.append(avg_aspiration_each_step)
+            self.infection_list.append(infection_number_each_step)
+
         if ((self.get_recovered_number() + self.get_dead_number() + self.get_susceptible_number())
                 == self.total_population):
             self.running = False
+            self.save_csv(
+                self.stay_in_list,
+                self.stay_out_list,
+                self.steps_list,
+                self.aspiration_list,
+                self.infection_list)
 
     def get_stay_in_number(self):
         """Get number of staying in agents, used for graphing and visualization
@@ -351,3 +390,19 @@ class MainModel(Model):
         Returns: number of agents that died from the virus until that step
         """
         return self.dead_agents_number
+
+
+br_params = {
+    "global_aspiration": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+    "government_stringent": [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+}
+
+br = BatchRunner(
+    MainModel,
+    br_params,
+    iterations=1,
+    max_steps=1000,
+)
+
+if __name__ == "__main__":
+    br.run_all()
