@@ -11,7 +11,6 @@ var CanvasModule = function(canvas_width, canvas_height, grid_width, grid_height
 	var interaction_canvas = $(canvas_tag)[0];
 	var parent = $(parent_div_tag)[0];
 
-	//$("body").append(canvas);
 	$("#elements").append(parent);
 	parent.append(canvas);
 	parent.append(interaction_canvas);

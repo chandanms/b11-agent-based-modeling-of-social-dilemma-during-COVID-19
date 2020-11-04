@@ -27,19 +27,12 @@ class ChartModule(VisualizationElement):
                                      the page, in pixels. Default to 200 x 500
         data_collector_name: Name of the DataCollector object in the model to
                              retrieve data from.
-        template: "chart_module.html" stores the HTML template for the module.
 
 
     Example:
         schelling_chart = ChartModule([{"Label": "happy", "Color": "Black"}],
                                       data_collector_name="datacollector")
 
-    TODO:
-        Have it be able to handle agent-level variables as well.
-
-        More Pythonic customization; in particular, have both series-level and
-        chart-level options settable in Python, and passed to the front-end
-        the same way that "Color" is currently.
 
     """
 
@@ -74,6 +67,7 @@ class ChartModule(VisualizationElement):
         series_json = json.dumps(self.series)
         new_element = "new ChartModule_base({}, {},  {}, {}, {}, {})"
         new_element = new_element.format(series_json, canvas_width, canvas_height,pos_top,pos_left,title)
+        #form the javascript call
         self.js_code = "elements.push(" + new_element + ");"
 
     def render(self, model):
